@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int          @id @default(autoincrement())
+  email        String       @unique
+  password     String
+  nome         String?
+  
+  tasksCreated Task[]       @relation("CreatedBy")
+  tasksShared  SharedTask[]
+  categories   Category[]
+  
+  @@map("users")
+}
+
+model Category {
+  id         Int     @id @default(autoincrement())
+  name       String
+  
+  userId     Int
+  user       User    @relation(fields: [userId], references: [id])
+  tasks      Task[]
+  
+  @@map("categories")
+}
+
+model Task {
+  id            Int            @id @default(autoincrement())
+  title         String
+  description   String?
+  
+  dueDate       DateTime?      @map("due_date")
+  priority      String         @default("Normal")
+  state         String         @default("Pendente")
+  isFavorite    Boolean        @default(false) @map("is_favorite")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  creatorId     Int            @map("creator_id")
+  creator       User           @relation("CreatedBy", fields: [creatorId], references: [id])
+  
+  categoryId    Int?           @map("category_id")
+  category      Category?      @relation(fields: [categoryId], references: [id])
+  
+  sharedWith    SharedTask[]
+  attachments   Attachment[]
+  
+  @@map("tasks")
+}
+
+model SharedTask {
+  taskId      Int
+  task        Task   @relation(fields: [taskId], references: [id])
+  
+  userId      Int
+  user        User   @relation(fields: [userId], references: [id])
+  
+  @@id([taskId, userId])
+  @@map("shared_tasks")
+}
+
+model Attachment {
+  id          Int      @id @default(autoincrement())
+  fileName    String   @map("file_name")
+  url         String
+  
+  taskId      Int      @map("task_id")
+  task        Task     @relation(fields: [taskId], references: [id])
+  
+  @@map("attachments")
+}
